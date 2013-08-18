@@ -1,0 +1,41 @@
+#create table new_factors as select east,north,m::decimal(6,2),m_0::decimal(6,2),cfhs from (select x,y,avg(1/m_0) as m_0,avg(m) as m from row_factors where season='YR' group by x,y) as rf join daily4km.pixels using (x,y) join daily4km.cfhs using (x,y) order by x,y;
+
+psql -A --cluster 8.4/eto -d etosimetaw -t -c 'select east,north,m_0 from cfhs.new_factors order by east,north' | r.in.xyz input=- output=test_cfhs method=mean
+
+for y in 2004 2005 2006 2007 2008 2009; do for s in JFM AMJ JAS OND; do psql -A --cluster 8.4/eto -d etosimetaw -t -c "select east,north,1.0/m_0 from cfhs.row_factors join daily4km.pixels p using (x,y) where year=$y and season='$s' order by east,north" | r.in.xyz input=- output=cfhs.m_0.$y.$s method=mean;for v in m b; do psql -A --cluster 8.4/eto -d etosimetaw -t -c "select east,north,$v from cfhs.row_factors join daily4km.pixels p using (x,y) where year=$y and season='$s' order by east,north" | r.in.xyz input=- output=cfhs.$v.$y.$s method=mean; done; done; done
+
+create view cfhs_avg as select season,avg(m) as m,avg(m_0) as m_0,avg(b) as b,stddev(m) as m_sd,stddev(m_0) as m_0_sd,stddev(b) as b_sd from cfhs_all_year group by season;
+
+select season,count(*),
+count(case when (d.m<a.m-2.57*a.m_sd) then 1 else null end) as m_min,
+count(case when (d.m>a.m+2.57*a.m_sd) then 1 else Null end) as m_max,
+count(case when (d.m_0<a.m_0-2.57*a.m_0_sd) then 1 else null end) as m_0_min,
+count(case when (d.m_0>a.m_0+2.57*a.m_0_sd) then 1 else Null end) as m_0_max,
+count(case when (d.b<a.b-2.57*a.b_sd) then 1 else null end) as b_min,
+count(case when (d.b>a.b+2.57*a.b_sd) then 1 else Null end) as b_max
+from cfhs_all_year d 
+join cfhs_avg a using (season) 
+group by season;
+
+select season,count(*),
+count(case when (d.m<a.m-2*a.m_sd) then 1 else null end) as m_min,
+count(case when (d.m>a.m+3*a.m_sd) then 1 else Null end) as m_max,
+count(case when (d.m_0<a.m_0-2*a.m_0_sd) then 1 else null end) as m_0_min,
+count(case when (d.m_0>a.m_0+3*a.m_0_sd) then 1 else Null end) as m_0_max,
+count(case when (d.b<a.b-2.57*a.b_sd) then 1 else null end) as b_min,
+count(case when (d.b>a.b+2.57*a.b_sd) then 1 else Null end) as b_max
+from cfhs_all_year d 
+join cfhs_avg a using (season) 
+group by season;
+
+select season,
+(m-2*m_sd)::decimal(6,2) as m_m2d,
+m::decimal(6,2) as m,
+(m+3*m_sd)::decimal(6,2) as m_p3d ,
+(m_0-2*m_0_sd)::decimal(6,2) as m_0_m2d,
+m_0::decimal(6,2) as m_0,
+(m_0+3*m_0_sd)::decimal(6,2) as m_0_p3d ,
+(b-2.57*b_sd)::decimal(6,2) as b_m257d,
+b::decimal(6,2) as b,
+(b+2.57*b_sd)::decimal(6,2) as b_p257d 
+from cfhs_avg;
