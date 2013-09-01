@@ -1,8 +1,9 @@
 #! /usr/bin/make -f
 configure.mk:=1
 
-start_year:=1920
-end_year:=2010
+#start_year:=1920
+start_year:=2010
+end_year:=2012
 mid_years:= $(shell seq `echo ${start_year}+1 | bc` `echo ${end_year}-1 | bc`)
 years:=${start_year} ${mid_years} ${end_year}
 
