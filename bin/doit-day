@@ -1,9 +1,15 @@
 #! /bin/sh
 for y in `seq $1 $2`; do 
    g.mapset location=${y} mapset=PERMANENT; 
-   for m in `g.mapsets -l | tr ' ' "\n" | grep "${y}-..-.."`; do 
-     g.mapset mapset=$m; 
-     g.remove dTn,dTx,dPCP 2> /dev/null > /dev/null
-     make --include-dir=~/etosimetaw/bin -f ~/etosimetaw/bin/daily.mk TnTxPCPEToRF.csv; 
+   for m in `g.mapsets fs=newline -l | grep "${y}-..-.."`; do 
+     g.mapset mapset=$m;
+     for r in RF ETh ETo PCP Tm Tn Tx dPCP dTn dTx; do
+	 g.rename rast=${r},p${r};
+     done
+     for v in dPCP dTn dTx; do
+	 g.rename vect=${v},p${v};
+     done
+#     make --directory=~/calsimetaw/bin -f daily.mk csv; 
+     make --directory=~/calsimetaw/bin -f daily.mk aPCP jPCP; 
    done ;
  done

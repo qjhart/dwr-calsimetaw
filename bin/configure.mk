@@ -21,14 +21,13 @@ y-d:=$(foreach d,${days},$(firstword $(subst -, ,$d))/$d)
 SHELL:=/bin/bash
 
 # Filesystem
-fs-root:=/home/quinn/etosimetaw
+fs-root:=/home/quinn/calsimetaw
 out:=${fs-root}/output
 down:=${fs-root}/data
 
 # Input Postgres DB
 db:=/home/quinn/etosimetaw/db
-database:=etosimetaw
-PG:=psql --cluster 8.4/eto -d ${database}
+PG:=psql service=calsimetaw
 PG-CSV:= ${PG} -A -F',' --pset footer
 PG-LIST:=${PG} -A -R' ' -t 
 PG-SITE:= ${PG} -A -F'|' -t
@@ -37,8 +36,7 @@ PG-SITE:= ${PG} -A -F'|' -t
 # Row splitting data
 rows:=$(shell seq -f %03g 0 299)
 
-#v.in.ogr:=v.in.ogr -e dsn="PG:dbname=${db} host=casil.ucdavis.edu port=5433 user=qjhart"
-v.in.ogr:=v.in.ogr -e dsn="PG:dbname=${database} port=5433"
+v.in.ogr:=v.in.ogr -e dsn="PG:service=calsimetaw"
 
 # Grass specific functions
 define grass_or_die
