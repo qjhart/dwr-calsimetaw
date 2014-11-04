@@ -4,7 +4,7 @@ ifndef configure.mk
 include configure.mk
 endif
 
-include days.mk
+#include days.mk
 
 #####################################################################
 # Daily Mapset files
