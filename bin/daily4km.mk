@@ -36,7 +36,7 @@ ${db}/${schema}.pixels:${db}/${schema}
 	g.region rast=state@4km
 	r.mask -o state@4km
 	r.stats -1 -x -N -g state@4km,prism_mask@4km,cimis_mask@4km | sed -e 's/\*/0/g' | ${PG} -c "COPY \"${schema}\".pixels(east,north,x,y,dwr,prism,cimis) from STDIN WITH DELIMITER ' ';"
-	${PG} -c "select AddGeometryColumn('${schema}','pixels','centroid',3310,'POINT',2); select AddGeometryColumn('${schema}','pixels','boundary',3310,'POLYGON',2); update \"${schema}\".pixels set centroid=setsrid(MakePoint(east,north),3310),boundary=setsrid(Envelope(ST_MakeBox2D(MakePoint(east-2000,north-2000),MakePoint(east+2000,north+2000))),3310); update \"${schema}\".pixels set longitude=y(transform(centroid,4269)),latitude=x(transform(centroid,4269)),dwr_id=y||'_'||x;"
+	${PG} -c "select AddGeometryColumn('${schema}','pixels','centroid',3310,'POINT',2); select AddGeometryColumn('${schema}','pixels','boundary',3310,'POLYGON',2); update \"${schema}\".pixels set centroid=st_setsrid(st_MakePoint(east,north),3310),boundary=st_setsrid(st_Envelope(ST_MakeBox2D(st_MakePoint(east-2000,north-2000),st_MakePoint(east+2000,north+2000))),3310); update \"${schema}\".pixels set longitude=st_y(st_transform(centroid,4269)),latitude=st_x(st_transform(centroid,4269)),dwr_id=y||'_'||x;"
 	touch $@
 
 ${db}/${schema}.cfhs:${db}/${schema}.pixels
@@ -81,19 +81,18 @@ ${cimis-rowtables}:${db}/${cimis-schema}.cimis%:${db}/${cimis-schema}
 
 ifdef is_daily
 
-.PHONY:4km-cimis
+# .PHONY:4km-cimis
 
-4km-cimis: ${etc}/db/4km
-${etc}/db/4km: ${rast}/Tn ${rast}/Tx ${rast}/U2 ${rast}/es ${rast}/ea ${rast}/Rs ${rast}/Rnl  ${rast}/K ${rast}/et0
-	[[ -d ${etc}/db ]] || mkdir -p ${etc}/db
-	${MASK}
-        @g.region rast=state@4km;\
-        doy=`date --date=${date} +%j`;\
-	@date=`g.gisenv MAPSET`;\
-        r.stats -1 -n -x fs=, input=Tn,Tx,U2,Tdew,es,ea,Rs,Rnl,K,et0 2>/dev/null |\
-        sed -e "s/^/${date},${YYYY},${MM},${DD},$${doy},/" |\
-        ${PG} -c 'COPY cimis4km.cimis (ymd,year,month,day,doy,x,y,Tn,Tx,U2,Tdew,es,ea,Rs,Rnl,k,et0) from STDIN WITH CSV';
-	touch $@
+# 4km-cimis: ${etc}/db/4km
+# ${etc}/db/4km: ${rast}/Tn ${rast}/Tx ${rast}/U2 ${rast}/es ${rast}/ea ${rast}/Rs ${rast}/Rnl  ${rast}/K ${rast}/et0
+# 	[[ -d ${etc}/db ]] || mkdir -p ${etc}/db
+# 	${MASK}
+# 	date=`g.gisenv MAPSET`;\
+# 	doy=`date --date=${date} +%j`;\
+# 	r.stats -1 -n -x fs=, input=Tn,Tx,U2,Tdew,es,ea,Rs,Rnl,K,et0 2>/dev/null |\
+# 	sed -e "s/^/${date},${YYYY},${MM},${DD},$${doy},/" |\
+# 	${PG} -c 'COPY cimis4km.cimis (ymd,year,month,day,doy,x,y,Tn,Tx,U2,Tdew,es,ea,Rs,Rnl,k,et0) from STDIN WITH CSV';
+# 	touch $@
 
 .PHONY: 4km
 4km: ${etc}/db/4km
@@ -101,7 +100,7 @@ ${etc}/db/4km: ${rast}/Tn ${rast}/Tx ${rast}/U2 ${rast}/es ${rast}/ea ${rast}/Rs
 ${etc}/db/4km: ${rast}/Tn ${rast}/Tx ${rast}/PCP ${rast}/ETo ${rast}/RF
 	[[ -d ${etc}/db ]] || mkdir -p ${etc}/db
 	${MASK}
-	@date=`g.gisenv MAPSET`;\
+	date=`g.gisenv MAPSET`;\
 	doy=`date --date=${date} +%j`;\
 	declare -a M=(`g.gisenv MAPSET | tr '-' ' '`);\
 	r.stats -1 -n -x fs=, input=Tn,Tx,PCP,ETo,RF 2>/dev/null |\

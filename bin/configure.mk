@@ -93,9 +93,6 @@ define NOMASK
 g.region rast=state@4km; r.mask -r
 endef
 
-define NOMASK-OLD
-g.region rast=state@4km; if ( g.findfile element=cellhd file=MASK > /dev/null); then g.remove MASK &>/dev/null; fi
-endef
 
 ####################################
 # Mapset specific
