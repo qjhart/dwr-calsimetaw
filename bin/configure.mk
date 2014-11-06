@@ -87,7 +87,7 @@ endif
 #endef
 
 define MASK
-g.region rast=state@4km; r.mask -o input=state@4km;
+g.region rast=state@4km; r.mask -o input=MASK@4km
 endef
 
 define NOMASK
