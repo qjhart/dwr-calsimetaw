@@ -77,5 +77,4 @@ $(foreach ym,${yms},$(eval $(call ymd,${ym},${t})))
 $(foreach t,j a,$(foreach ym,${yms},$(eval $(call monthly,${ym},${t}))))
 
 .PHONY: pcp
-pcp:: aRF jRF aPCP_summed aPCP_frac 
-
+pcp:: aRF jRF aPCP_summed aPCP_frac jPCP_summed jPCP_frac
