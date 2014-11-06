@@ -27,7 +27,7 @@ out:=${fs-root}/output
 down:=${fs-root}/data
 
 # Input Postgres DB
-db:=/home/quinn/etosimetaw/db
+db:=/home/quinn/calsimetaw/db
 PG:=psql service=calsimetaw
 PG-CSV:= ${PG} -A -F',' --pset footer
 PG-LIST:=${PG} -A -R' ' -t 

@@ -20,7 +20,7 @@ ${rowtables}:${db}/join4km.daily%:${db}/join4km
 	touch $@
 
 
-${loc}/%/db/join4km: ${loc}/%/cellhd/jTn ${loc}/%/cellhd/jTx ${loc}/%/cellhd/jPCP ${loc}/%/cellhd/jETo ${loc}/%/cellhd/jRF
+${loc}/%/etc/db/join4km: ${loc}/%/cellhd/jTn ${loc}/%/cellhd/jTx ${loc}/%/cellhd/jPCP ${loc}/%/cellhd/jETo ${loc}/%/cellhd/jRF
 	[[ -d ${loc}/$*/etc/db ]] || mkdir -p ${loc}/$*/etc/db;\
 	g.mapset $*
 	${MASK};\
