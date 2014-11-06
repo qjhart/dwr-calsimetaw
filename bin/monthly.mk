@@ -31,7 +31,7 @@ $2RF::${loc}/$1/cellhd/$2RF
 ${loc}/$1/cellhd/$2RF:
 	g.mapset $1;\
 	${NOMASK};\
-	r.mapcalc 'aRF=$(patsubst %,"aRF@%"+,${ymd.$1})0'
+	r.mapcalc '$2RF=$(patsubst %,"$2RF@%"+,${ymd.$1})0'
 
 .PHONY: $2PCP_summed
 $2PCP_summed::${loc}/$1/cellhd/$2PCP_summed
