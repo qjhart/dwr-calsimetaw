@@ -29,7 +29,7 @@ define monthly
 .PHONY: $2RF
 $2RF::${loc}/$1/cellhd/$2RF
 ${loc}/$1/cellhd/$2RF:
-	g.mapset $*;\
+	g.mapset $1;\
 	${NOMASK};\
 	r.mapcalc 'aRF=$(patsubst %,"aRF@%"+,${ymd.$1})0'
 
