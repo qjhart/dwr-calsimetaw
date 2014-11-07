@@ -52,6 +52,6 @@ join4km.daily:
 
 join4km.daily.zip:
 	cd ${out}/join4km;\
-	for z in `ls daily_* | cut -d_ -f 1,2 | sed -e 's/.$$//' | sort -u`; do \
+	for z in `ls daily_*.csv | cut -d_ -f 1,2 | sed -e 's/.$$//' | sort -u`; do \
 	 echo $${z}x; files=$${z}?_*.csv; zip -q $${z}x.zip $${files}; \
 	done
