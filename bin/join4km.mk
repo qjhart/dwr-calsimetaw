@@ -49,3 +49,9 @@ join4km.daily:
 	  ${PG} -q -t -c "\COPY (select x,y,ymd,year,month,day,doy,tx,pcp as ppt from join4km.daily$${row} where x=$${x} order by ymd) to daily_$${y}_$${x}.csv with csv header"; \
 	 done ; \
 	done
+
+join4km.daily.zip:
+	cd ${out}/join4km;\
+	for z in `ls daily_* | cut -d_ -f 1,2 | sed -e 's/.$$//' | sort -u`; do \
+	 echo $${z}x; files=$${z}?_*.csv; zip -q $${z}x.zip $${files}; \
+	done
