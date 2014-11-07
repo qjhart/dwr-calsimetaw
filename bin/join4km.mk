@@ -34,3 +34,18 @@ ${loc}/%/etc/db/join4km: ${loc}/%/cellhd/jTn ${loc}/%/cellhd/jTx ${loc}/%/cellhd
 
 .PHONY: join4km
 join4km: $(patsubst %,${loc}/%/etc/db/join4km,${days})
+
+#rows:=$(shell seq 0 265)
+#$(foreach r,${rows},cols.$r:=$(shell row=`printf "%03d" $r`; ${PG} -t -c "select distinct x from join4km.daily$${row} order by x"))
+
+.PHONY: join4km.daily
+join4km.daily: 
+	[[ -d ${out}/joinkm ]] || mkdir -p ${out}/join4km;\
+	cd ${out}/join4km;\
+	for y in `seq 0 265`; do \
+	 row=`printf "%03d" $$y`; \
+	 echo $$row;\
+	 for x in `${PG} -t -c "select distinct x from join4km.daily$${row} order by x"`; do \
+	  ${PG} -q -t -c "\COPY (select x,y,ymd,year,month,day,doy,tx,pcp as ppt from join4km.daily$${row} where x=$${x} order by ymd) to daily_$${y}_$${x}.csv with csv header"; \
+	 done ; \
+	done

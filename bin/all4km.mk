@@ -35,3 +35,16 @@ ${loc}/%/etc/db/all4km: ${loc}/%/cellhd/jTn ${loc}/%/cellhd/jTx ${loc}/%/cellhd/
 .PHONY: all4km
 all4km: $(patsubst %,${loc}/%/etc/db/all4km,${days})
 
+
+.PHONY: all4km.daily
+all4km.daily: 
+	[[ -d ${out}/allkm ]] || mkdir -p ${out}/all4km;\
+	cd ${out}/all4km;\
+	for y in `seq 0 265`; do \
+	 row=`printf "%03d" $$y`; \
+	 echo $$row;\
+	 for x in `${PG} -t -c "select distinct x from all4km.daily$${row} order by x"`; do \
+	  ${PG} -q -t -c "\COPY (select x,y,ymd,year,month,day,doy,tx,pcp as ppt from all4km.daily$${row} where x=$${x} order by ymd) to daily_$${y}_$${x}.csv with csv header"; \
+	 done ; \
+	done
+

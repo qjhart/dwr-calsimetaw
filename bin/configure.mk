@@ -1,6 +1,8 @@
 #! /usr/bin/make -f
 configure.mk:=1
 
+ifndef no_dates
+
 #start_year:=1920
 start_year:=1921
 end_year:=1929
@@ -15,9 +17,10 @@ $(patsubst %,${end_year}-%,01 02 03 04 05 06 07 08 09)
 
 days:=$(shell for ym in ${yms}; do for dom in `seq 0 31`; do date --date="$${ym}-01 + $${dom} days" +%Y-%m-%d; done ; done | sort -u )
 
-
 y-yms:=$(foreach y,${yms},$(firstword $(subst -, ,$y))/$y)
 y-d:=$(foreach d,${days},$(firstword $(subst -, ,$d))/$d)
+
+endif
 
 SHELL:=/bin/bash
 
