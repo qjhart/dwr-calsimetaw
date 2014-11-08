@@ -1,7 +1,7 @@
 #! /usr/bin/make -f
 configure.mk:=1
 
-ifndef no_dates
+ifndef no-dates
 
 #start_year:=1920
 start_year:=1921
@@ -15,10 +15,9 @@ yms:=$(patsubst %,${start_year}-%,10 11 12) \
 $(foreach y,${mid_years},$(patsubst %,$y-%,01 02 03 04 05 06 07 08 09 10 11 12)) \
 $(patsubst %,${end_year}-%,01 02 03 04 05 06 07 08 09)
 
+ifndef no-days
 days:=$(shell for ym in ${yms}; do for dom in `seq 0 31`; do date --date="$${ym}-01 + $${dom} days" +%Y-%m-%d; done ; done | sort -u )
-
-y-yms:=$(foreach y,${yms},$(firstword $(subst -, ,$y))/$y)
-y-d:=$(foreach d,${days},$(firstword $(subst -, ,$d))/$d)
+endif
 
 endif
 
@@ -27,15 +26,12 @@ SHELL:=/bin/bash
 # Filesystem
 fs-root:=/home/quinn/calsimetaw
 out:=${fs-root}/output
-down:=${fs-root}/data
 
 # Input Postgres DB
-db:=/home/quinn/calsimetaw/db
 PG:=psql service=calsimetaw
 PG-CSV:= ${PG} -A -F',' --pset footer
 PG-LIST:=${PG} -A -R' ' -t 
 PG-SITE:= ${PG} -A -F'|' -t
-#PG:= psql -d ${db} -h casil.ucdavis.edu -U qjhart -p 5433
 
 # Row splitting data
 rows:=$(shell seq -f %03g 0 299)
@@ -49,46 +45,16 @@ endef
 
 ifdef GISRC
 
-#eto-gisdbase:=/home/quinn/gdb/etosimetaw
-
 GISDBASE:=$(shell g.gisenv get=GISDBASE)
 LOCATION_NAME:=$(shell g.gisenv get=LOCATION_NAME)
 MAPSET:=$(shell g.gisenv get=MAPSET)
 
-YYYY:=$(word 2,$(subst -, ,f-${MAPSET}))
-MM:=$(word 3,$(subst -, ,f-${MAPSET}))
-DD:=$(word 4,$(subst -, ,f-${MAPSET}))
-
-#$(warning YYYY=${YYYY} MM=${MM} DD=${DD})
-
-date:=${MAPSET}
-
-# Generic vol.rst parmeters
-WIND3:=$(loc)/$(MAPSET)/WIND3
-DEFAULT_WIND3:=$(loc)/PERMANENT/WIND3
-
 # Shortcut Directories
-gdb:=${GISDBASE}
 loc:=$(GISDBASE)/$(LOCATION_NAME)
-map:=$(GISDBASE)/$(LOCATION_NAME)/${MAPSET}
-rast:=$(loc)/$(MAPSET)/cellhd
-vect:=$(loc)/$(MAPSET)/vector
-etc:=$(loc)/$(MAPSET)/etc
-
-else 
-
-GISDBASE:=/home/groups/etosimetaw/gdb
-gdb:=${GISDBASE}
-
-endif
 
 ##############################################################################
 # MASK defines
 ##############################################################################
-#define MASK
-#g.region rast=state@4km; (g.findfile element=cellhd file=MASK || g.copy rast=sta#te@4km,MASK) > /dev/null
-#endef
-
 define MASK
 g.region rast=state@4km; r.mask -o input=MASK@4km
 endef
@@ -97,39 +63,7 @@ define NOMASK
 g.region rast=state@4km; r.mask -r
 endef
 
-
-####################################
-# Mapset specific
-####################################
-
-ifeq (${MAPSET},${db})
-
-else # is YEAR
-
-ifeq (${MM},)
-
-else
-
-ifeq (${DD},)
-
-is_monthly=${MAPSET}
-
-else
-
-is_daily:=${MAPSET}
-monthly-mapset:=${YYYY}-${MM}
-monthly-rast:=$(loc)/$(monthly-mapset)/cellhd
-
-
-endif #DD
-
-endif #MM
-
-endif # Year or no
-
-
-info::
-	echo ${y-d}
+endif
 
 yms:
 	@echo ${yms}

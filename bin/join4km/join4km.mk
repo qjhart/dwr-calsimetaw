@@ -55,3 +55,6 @@ join4km.daily.zip:
 	for z in `ls daily_*.csv | cut -d_ -f 1,2 | sed -e 's/.$$//' | sort -u`; do \
 	 echo $${z}x; files=$${z}?_*.csv; zip -q $${z}x.zip $${files}; \
 	done
+
+join4km/sum_jPCP_frac.csv:
+	cat $(patsubst %,${loc}/%/etc/sum/jPCP_frac.csv,${yms}) > $@
