@@ -61,6 +61,20 @@ ${loc}/$1/etc/hist/$2PCP_frac.csv:${loc}/$1/cellhd/$2PCP_frac
 	${MASK};\
 	r.stats -1 -n $2PCP_frac | perl -a -n -e '$$$$n=sprintf("%.2f",$$$$F[0]); $$$$hist{$$$$n}++; END {foreach (sort { $$$$a <=> $$$$b } keys %hist) { printf "%s,%d\n",$$$$_,$$$$hist{$$$$_};} }' | sed -e "s/^/$2PCP_frac,$1,/" > $$@
 
+stats:: ${loc}/$1/etc/sum/$2PCP_summed.csv ${loc}/$1/etc/hist/$2PCP_summed.csv
+
+${loc}/$1/etc/sum/$2PCP_summed.csv:${loc}/$1/cellhd/$2PCP_summed
+	[[ -d ${loc}/$1/etc/sum ]] || mkdir ${loc}/$1/etc/sum;\
+	g.mapset $1;\
+	${MASK};\
+	r.stats -1 -n $2PCP_summed  | perl -a -n -e '$$$$cnt++; $$$$sum+=$$$$F[0]; $$$$sum2+=$$$$F[0]*$$$$F[0]; END {printf "%d,%f,%f\n",$$$$cnt,$$$$sum,$$$$sum2; }' | sed -e "s/^/$2PCP_summed,$1,/" > $$@
+
+${loc}/$1/etc/hist/$2PCP_summed.csv:${loc}/$1/cellhd/$2PCP_summed
+	[[ -d ${loc}/$1/etc/hist ]] || mkdir ${loc}/$1/etc/hist;\
+	g.mapset $1;\
+	${MASK};\
+	r.stats -1 -n $2PCP_summed | perl -a -n -e '$$$$n=sprintf("%.2f",$$$$F[0]); $$$$hist{$$$$n}++; END {foreach (sort { $$$$a <=> $$$$b } keys %hist) { printf "%s,%d\n",$$$$_,$$$$hist{$$$$_};} }' | sed -e "s/^/$2PCP_summed,$1,/" > $$@
+
 endef
 
 # Could also be like this

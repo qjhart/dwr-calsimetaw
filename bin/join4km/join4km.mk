@@ -56,6 +56,8 @@ join4km.daily.zip:
 	 echo $${z}x; files=$${z}?_*.csv; zip -q $${z}x.zip $${files}; \
 	done
 
+.PHONY: stats
+stats: sum_jPCP_frac.csv hist_jPCP_frac.csv avg_jPCP_frac.csv sum_jPCP_summed.csv hist_jPCP_summed.csv
 sum_jPCP_frac.csv:
 	cat $(patsubst %,${loc}/%/etc/sum/jPCP_frac.csv,${yms}) > $@
 
@@ -64,3 +66,10 @@ hist_jPCP_frac.csv:
 
 avg_jPCP_frac.csv: sum_jPCP_frac.csv hist_jPCP_frac.csv
 	${PG} -f monthly_stats.sql
+
+sum_jPCP_summed.csv:
+	cat $(patsubst %,${loc}/%/etc/sum/jPCP_summed.csv,${yms}) > $@
+
+hist_jPCP_summed.csv:
+	cat $(patsubst %,${loc}/%/etc/hist/jPCP_summed.csv,${yms}) > $@
+
