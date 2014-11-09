@@ -1,22 +1,22 @@
 #! /usr/bin/make -f 
 
 ifndef configure.mk
-include configure.mk
+include ../configure.mk
 endif
 
 rows:=$(shell seq -f %03g 0 299)
-rowtables:=$(patsubst %,${db}/join4km.daily%,${rows})
-rowtable-indices:=$(patsubst %,${db}/join4km.daily%.idx,${rows})
+rowtables:=$(patsubst %,db/join4km.daily%,${rows})
+rowtable-indices:=$(patsubst %,db/join4km.daily%.idx,${rows})
 
 .PHONY:db
-db::${db}/join4km ${rowtables}
+db::db/join4km ${rowtables}
 
-${db}/join4km:
-	${PG} -f join4km/schema.sql
+db/join4km:
+	${PG} -f schema.sql
 	touch $@
 
-${rowtables}:${db}/join4km.daily%:${db}/join4km
-	${PG} --variable=r=$* -f join4km/add_join4km.sql
+${rowtables}:db/join4km.daily%:db/join4km
+	${PG} --variable=r=$* -f add_join4km.sql
 	touch $@
 
 
@@ -56,5 +56,11 @@ join4km.daily.zip:
 	 echo $${z}x; files=$${z}?_*.csv; zip -q $${z}x.zip $${files}; \
 	done
 
-join4km/sum_jPCP_frac.csv:
+sum_jPCP_frac.csv:
 	cat $(patsubst %,${loc}/%/etc/sum/jPCP_frac.csv,${yms}) > $@
+
+hist_jPCP_frac.csv:
+	cat $(patsubst %,${loc}/%/etc/hist/jPCP_frac.csv,${yms}) > $@
+
+avg_jPCP_frac.csv: sum_jPCP_frac.csv hist_jPCP_frac.csv
+	${PG} -f monthly_stats.sql
