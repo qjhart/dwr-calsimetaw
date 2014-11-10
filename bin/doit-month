@@ -1,19 +1,20 @@
 #! /bin/bash
-g=/home/quinn/gdb; 
+g=/home/quinn/etosimetaw/gdb; 
 b=$g/etosimetaw; 
 
 if [[ -z $1 ]] ; then sy=1997; else sy=$1; fi
-if [[ -z $2 ]] ; then ey=2007; else ey=$1; fi
+if [[ -z $2 ]] ; then ey=2007; else ey=$2; fi
 
 for y in `seq $sy $ey`; do 
-    if [[ $y = 1997 ]] ; then sm=10; else sm=1; fi
-    if [[ $y = 2007 ]] ; then em=09; else em=12; fi
-    for m in `seq -f  %02.0f $sm $em`; do 
-	g.mapset gisdbase=$b location=$y mapset=$y-$m; 
-#	g.remove NRF;
+    if [[ $y = 1997 && /bin/false ]] ; then sm=10; else sm=1; fi
+    if [[ $y = 2007 && /bin/false ]] ; then em=09; else em=12; fi
+    for m in `seq -f  %02.0f $sm $em`; do
+	echo $y-$m
+	g.mapset location=$y mapset=$y-$m; 
 #	rm -f $b/$y/${y}-${m}/etc/TnTxPCPNRF.csv
 #	make-eto TnTxPCPNRF.csv; 
-	make -f monthly.mk -B NRF
-	make -f 4km.mk prism
+	make -f monthly.mk PCP_summed
+#	make -f monthly.mk -B NRF
+#	make -f 4km.mk prism
     done; 
 done
