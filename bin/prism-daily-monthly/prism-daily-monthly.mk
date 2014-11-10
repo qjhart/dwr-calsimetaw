@@ -111,3 +111,19 @@ $(foreach ym,${yms},$(eval $(call monthly,${ym},${t})))
 
 .PHONY: ppt
 ppt:: ppt_summed ppt_frac
+
+.PHONY: monthly-stats
+
+monthly-stats:: sum_ppt_frac.csv hist_ppt_frac.csv sum_ppt_summed.csv hist_ppt_summed.csv
+
+sum_ppt_frac.csv:
+	cat $(patsubst %,${loc}/%/etc/sum/ppt_frac.csv,${yms}) > $@
+
+hist_ppt_frac.csv:
+	cat $(patsubst %,${loc}/%/etc/hist/ppt_frac.csv,${yms}) > $@
+
+sum_ppt_summed.csv:
+	cat $(patsubst %,${loc}/%/etc/sum/ppt_summed.csv,${yms}) > $@
+
+hist_ppt_summed.csv:
+	cat $(patsubst %,${loc}/%/etc/hist/ppt_summed.csv,${yms}) > $@
