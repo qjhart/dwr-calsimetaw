@@ -101,7 +101,7 @@ ${loc}/$1/etc/hist/ppt_summed.csv:${loc}/$1/cellhd/ppt_summed
 	[[ -d ${loc}/$1/etc/hist ]] || mkdir ${loc}/$1/etc/hist;\
 	g.mapset $1;\
 	${MASK};\
-	r.stats -1 -n ppt_summed | perl -a -n -e '$$$$n=sprintf("%.2f",$$$$F[0]); $$$$hist{$$$$n}++; END {foreach (sort { $$$$a <=> $$$$b } keys %hist) { printf "%s,%d\n",$$$$_,$$$$hist{$$$$_};} }' | sed -e "s/^/ppt_summed,$1,/" > $$@
+	r.stats -1 -n ppt_summed | perl -a -n -e '$$$$n=sprintf("%d",$$$$F[0]/5); $$$$hist{$$$$n}++; END {foreach (sort { $$$$a <=> $$$$b } keys %hist) { printf "%d,%d\n",$$$$_*5,$$$$hist{$$$$_};} }' | sed -e "s/^/ppt_summed,$1,/" > $$@
 
 endef
 
