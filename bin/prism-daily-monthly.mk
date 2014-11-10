@@ -90,6 +90,19 @@ ${loc}/$1/etc/hist/ppt_frac.csv:${loc}/$1/cellhd/ppt_frac
 	${MASK};\
 	r.stats -1 -n ppt_frac | perl -a -n -e '$$$$n=sprintf("%.2f",$$$$F[0]); $$$$hist{$$$$n}++; END {foreach (sort { $$$$a <=> $$$$b } keys %hist) { printf "%s,%d\n",$$$$_,$$$$hist{$$$$_};} }' | sed -e "s/^/ppt_frac,$1,/" > $$@
 
+stats:: ${loc}/$1/etc/sum/ppt_summed.csv ${loc}/$1/etc/hist/ppt_summed.csv
+${loc}/$1/etc/sum/ppt_summed.csv:${loc}/$1/cellhd/ppt_summed
+	[[ -d ${loc}/$1/etc/sum ]] || mkdir -p ${loc}/$1/etc/sum;\
+	g.mapset $1;\
+	${MASK};\
+	r.stats -1 -n ppt_summed  | perl -a -n -e '$$$$cnt++; $$$$sum+=$$$$F[0]; $$$$sum2+=$$$$F[0]*$$$$F[0]; END {printf "%d,%f,%f\n",$$$$cnt,$$$$sum,$$$$sum2; }' | sed -e "s/^/ppt_summed,$1,/" > $$@
+
+${loc}/$1/etc/hist/ppt_summed.csv:${loc}/$1/cellhd/ppt_summed
+	[[ -d ${loc}/$1/etc/hist ]] || mkdir ${loc}/$1/etc/hist;\
+	g.mapset $1;\
+	${MASK};\
+	r.stats -1 -n ppt_summed | perl -a -n -e '$$$$n=sprintf("%.2f",$$$$F[0]); $$$$hist{$$$$n}++; END {foreach (sort { $$$$a <=> $$$$b } keys %hist) { printf "%s,%d\n",$$$$_,$$$$hist{$$$$_};} }' | sed -e "s/^/ppt_summed,$1,/" > $$@
+
 endef
 
 $(foreach ym,${yms},$(eval $(call ymd,${ym},${t})))
