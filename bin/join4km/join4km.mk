@@ -46,7 +46,7 @@ join4km.daily:
 	 row=`printf "%03d" $$y`; \
 	 echo $$row;\
 	 for x in `${PG} -t -c "select distinct x from join4km.daily$${row} order by x"`; do \
-	  ${PG} -q -t -c "\COPY (select x,y,ymd,year,month,day,doy,tn,tx,pcp as ppt from join4km.daily$${row} where x=$${x} order by ymd) to daily_$${y}_$${x}.csv with csv header"; \
+	  ${PG} -q -t -c "\COPY (select x,y,ymd,year,month,day,doy,tx,tn,pcp as ppt from join4km.daily$${row} where x=$${x} order by ymd) to daily_$${y}_$${x}.csv with csv header"; \
 	 done ; \
 	done
 
