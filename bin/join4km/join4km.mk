@@ -67,6 +67,7 @@ join4km.daily.zip:
 	 echo $${z}x; files=$${z}?_*.csv; zip -q $${z}x.zip $${files}; \
 	done
 
+
 .PHONY: stats
 stats: sum_jPCP_frac.csv hist_jPCP_frac.csv avg_jPCP_frac.csv sum_jPCP_summed.csv hist_jPCP_summed.csv
 sum_jPCP_frac.csv:
