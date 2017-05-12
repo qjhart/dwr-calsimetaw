@@ -7,11 +7,9 @@ CIMIS dataset, Tn, Tx, Tdew, U2, Rs, Rso.
 
 ## Processing
 
-
-
 ### PRISM
 
-In 2010, the DWR CalSIMETAW dataset was first developed.  At that time, PRISM data was only available at a monthly timestep. To create daily estimates, the monthly data was perturbed by spine fits to NCDC daily station data, to estimate  daily variation.  
+In 2010, the DWR CalSIMETAW dataset was first developed.  At that time, PRISM data was only available at a monthly timestep. To create daily estimates, the monthly data was perturbed by spine fits to NCDC daily station data, to estimate  daily variation.
 
 In 2014, and error was discovered in the methodology used to correct for daily precipitation in the early decades, causing for an overestimate in the precipation for those years.  This data was corrected and redistributed in November 2014.
 
@@ -23,12 +21,6 @@ Subsequent to the original processing, PRISM data is also available for download
 * Daily estimates of ET and Precipitation
 * Gridded on the Standard DWR grid
 * Available from 1921 through the present day
-
-The
-
-33_12 46_7 64_18 80_19 113_34 114_34 119_32 120_32 121_33 121_34 122_34 137_47 138_48 139_49 140_50 148_60 154_56 168_64 173_67 174_68 225_90
-
-
 
 
 ## Installation
@@ -62,7 +54,9 @@ done
 
 ### Reproject to CIMIS
 
-There currently is no makefile to do this.  We just do that by scripting, which is a bit dumb but there you are.  In the ca-daily-prism code, you use
+There currently is no makefile to do this.  We just do that by scripting, which
+is a bit dumb but there you are.  In the ca-daily-prism code, you use the
+following.  Note that the make script runs the calsimetaw method for ET.
 
 ```{bash}
 # Let's say we have the first 212 days in stable, but the rest are provisional
@@ -73,6 +67,7 @@ for d in `seq 0 $d`; do
  for r in tmin tmax ppt; do
    r.proj input=$r location=prism-stable;
  done;
+ make -f ~/dwr-calsimetaw/2003-present/daily.mk
 done
 # Now the provisional data
 for d in `seq $d 364`; do
@@ -81,6 +76,7 @@ for d in `seq $d 364`; do
  for r in tmin tmax ppt; do
    r.proj input=$r location=prism-provisional;
  done;
+ make -f ~/dwr-calsimetaw/2003-present/daily.mk
 done
 ```
 
@@ -90,12 +86,12 @@ done
 ## Create TIF Files
 
 ```{bash}
-for s in `seq 0 365`; do  
- d=$(date --date="2014-10-01 + $s days" +%Y%m%d); 
- iso=$(date --date="2014-10-01 + $s days" --iso); 
- g.mapset $d; 
- i.group group=ee input=ETo,ppt,tmax,tmin,ETh,srha,Ra; 
- start=$(date --date="$d" +%s000); end=$(date --date="$d + 24hours" +%s000); 
+for s in `seq 0 365`; do
+ d=$(date --date="2014-10-01 + $s days" +%Y%m%d);
+ iso=$(date --date="2014-10-01 + $s days" --iso);
+ g.mapset $d;
+ i.group group=ee input=ETo,ppt,tmax,tmin,ETh,srha,Ra;
+ start=$(date --date="$d" +%s000); end=$(date --date="$d + 24hours" +%s000);
  r.out.gdal input=ee output=$iso.tif type=Float32;
 done
 ```

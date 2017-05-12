@@ -14,6 +14,28 @@ Since more PRISM data has been transferred into the _stable_ distribution the 20
 * [cimis_wy2015_p.zip](cimis_wy2015_p.zip)
 * [prism_wy2015_p.zip](prism_wy2015_p.zip)
 
+Finally, for prism, the 2015 calendar year has been zipped as well.  This is exactly the same data as found by combining the ```prism_wy2015_p``` and ```prism_wy2016_q1p``` data, removing the 2014  months, and renaming the files with a  ```daily_``` prefix.
+
+* [prism_2015.zip](prism_2015.zip)
+
+For CIMIS, the standard water year data has been slightly modified to conform with the
+legacy data access.  Some of the colums from the complete CIMIS data are removed
+
+```{bash}
+# Get only 2015 from the 2015 water year
+for i in wy2015/cimis_*.csv; do
+ n=`basename $i`;
+ grep -v ',2014-..-..,' $i | cut -d, -f 1-9,14 > $n;
+done
+# Combine with 2016 (q1) data for the complete 2015 calendar year
+for i in wy2016/cimis_*.csv; do
+ n=`basename $i`;
+tail -n+2 $i | cut -d, -f 1-9,14 >> $n;
+done
+```
+
+* [cimis_2015.zip](cimis_2015.zip)
+
 
 ## 2015-11-02 Water Year 2015-11
 

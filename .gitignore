@@ -1,0 +1,11 @@
+# Don't copy grass database, tif files
+gdb
+tif
+
+# Don't include pg_dump files.
+*.Fc
+www/*.zip
+
+# Emacs
+*~
+*#

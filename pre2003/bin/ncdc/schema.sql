@@ -20,8 +20,8 @@ unique(coopid,wbnid)
 );
 
 select AddGeometryColumn('ncdc','station','centroid',3310,'POINT',2);
-create index station_centroid_gist 
-on ncdc.station using gist(centroid gist_geometry_ops);
+create index station_centroid_gist
+on ncdc.station using gist(centroid);
 
 create table weather (
 station_id integer,
@@ -39,36 +39,36 @@ create index weather_day on ncdc.weather(day);
 
 create materialized view monthly_weather as
 select station_id,year,month,Tn,Tx,PCP,
-       Tn_stddev,Tx_stddev,PCP_count,PCP_stddev 
-from (select 
+       Tn_stddev,Tx_stddev,PCP_count,PCP_stddev
+from (select
 station_id,
 extract(year from day) as year,extract(month from day) as month,
 avg(v) as Tn,stddev(v) as Tn_stddev
 from weather
 where elem='TMIN' and m NOT IN ('M','S','(')
 group by station_id,extract(year from day),extract(month from day)
-) as tmin 
-join (select 
+) as tmin
+join (select
 station_id,
 extract(year from day) as year,extract(month from day) as month,
 avg(v) as Tx,stddev(v) as Tx_stddev
 from weather
 where elem='TMAX' and m NOT IN ('M','S','(')
 group by station_id,extract(year from day),extract(month from day)
-) as tmax 
+) as tmax
 using(station_id,year,month)
-join (select 
+join (select
 station_id,
 extract(year from day) as year,extract(month from day) as month,
 sum(v) as PCP,stddev(v) as PCP_stddev,count(*) as PCP_count
 from weather
-where elem='PRCP' and m NOT IN ('M','S','(') 
+where elem='PRCP' and m NOT IN ('M','S','(')
 group by station_id,extract(year from day),extract(month from day)
 ) as prcp
 using (station_id,year,month);
 
 create materialized view monthly_temp as
- select 
+ select
  station_id,
  extract(year from day) as year,extract(month from day) as month,
  avg(v) as avg,
@@ -79,14 +79,14 @@ where elem in ('TMIN','TMAX') and m NOT IN ('M','S','(')
 group by station_id,year,month,elem;
 
 create materialized view monthly_pcp as
- select 
+ select
  station_id,
  extract(year from day) as year,extract(month from day) as month,
  sum(v) as sum,
  stddev(v) as stddev,
  count(*) as count
  from weather
- where elem='PRCP' and m NOT IN ('M','S','(') 
+ where elem='PRCP' and m NOT IN ('M','S','(')
  group by station_id,year,month,elem;
 
 
@@ -99,53 +99,53 @@ Tx float,
 PCP float
 );
 
-create materialized view delta_weather_j as 
+create materialized view delta_weather_j as
 select w.station_id,day,elem,v-p.Tn as dv
 from ncdc.weather w join ncdc.prism p
-on (w.station_id=p.station_id 
-    and extract(year from day)=p.year 
+on (w.station_id=p.station_id
+    and extract(year from day)=p.year
     and extract(month from day)=p.month)
-where elem='TMIN' and m NOT IN ('M','S','(') 
+where elem='TMIN' and m NOT IN ('M','S','(')
 union
-select w.station_id,day,elem,v-p.Tx 
+select w.station_id,day,elem,v-p.Tx
 from ncdc.weather w join ncdc.prism p
-on (w.station_id=p.station_id 
-    and extract(year from day)=p.year 
+on (w.station_id=p.station_id
+    and extract(year from day)=p.year
     and extract(month from day)=p.month)
-where elem='TMAX' and m NOT IN ('M','S','(') 
+where elem='TMAX' and m NOT IN ('M','S','(')
 union
 select w.station_id,day,elem,case when m.PCP=0 then 0 else (v/m.PCP) end
-from 
+from
 ( select station_id,day,elem,v,
          extract(year from day) as year,
-         extract(month from day) as month 
+         extract(month from day) as month
   from ncdc.weather where elem='PRCP' and m NOT IN ('M','S','(')) as w
 join ncdc.prism p
 using (station_id,year,month)
-join monthly_weather m 
+join monthly_weather m
 using (station_id,year,month);
 
-create materialized view delta_weather_a as 
+create materialized view delta_weather_a as
 with w as (
  select station_id,day,elem,v,
   extract(year from day) as year,
-  extract(month from day) as month 
- from ncdc.weather 
+  extract(month from day) as month
+ from ncdc.weather
  where m NOT IN ('M','S','(')
 )
 select station_id,day,elem,v-p.Tn as dv
 from w join ncdc.prism p
 using (station_id,year,month)
-where elem='TMIN' 
+where elem='TMIN'
 union
-select station_id,day,elem,v-p.Tx 
+select station_id,day,elem,v-p.Tx
 from w join ncdc.prism p
 using (station_id,year,month)
 where elem='TMAX'
 union
 select station_id,day,elem,
 case when m.sum=0 then 0 else (v/m.sum) end as dv
-from w join monthly_pcp m 
+from w join monthly_pcp m
 using (station_id,year,month)
 where elem='PRCP';
 
@@ -253,4 +253,3 @@ TS:Tenths of sky cover
 \.
 
 END;
-

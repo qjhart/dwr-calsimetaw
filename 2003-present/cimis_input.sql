@@ -140,3 +140,43 @@ END LOOP;
 RETURN;
 end
 $$;
+
+create or replace function et_out_by_dwrid
+(in_dwr_id varchar(8),in_water_year integer)
+RETURNS TABLE(
+ X integer,Y integer,
+ ymd date,eto decimal(6,2))
+AS $$
+with u as (
+select p.x,p.y,
+unnest(ymd) as ymd,
+unnest(eto) as eto
+from cimis.cimis_wy join
+"4km".pixels p using (dwr_id)
+where dwr_id=$1
+and water_year=$2)
+select x,y,ymd,
+eto::decimal(6,2)
+from u;
+$$ LANGUAGE SQL IMMUTABLE;
+
+create or replace function et_out_wy
+  (base text, in_water_year integer)
+RETURNS SETOF text
+LANGUAGE PLPGSQL VOLATILE AS $$
+declare
+fn text;
+dwr_id text;
+begin
+FOR dwr_id IN SELECT p.dwr_id FROM "4km".pixels p
+LOOP
+    fn=base||'/'||dwr_id||'.csv';
+    EXECUTE format(
+    'copy ('||
+    'select * from et_out_by_dwrid(''%1$s'',%2$s))'||
+    ' to ''%3$s'' with csv header;',dwr_id,in_water_year,fn);
+    RETURN NEXT fn; -- return current row of SELECT
+END LOOP;
+RETURN;
+end
+$$;
