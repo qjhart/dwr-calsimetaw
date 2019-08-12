@@ -1,4 +1,4 @@
-#! /usr/bin/make -f 
+#! /usr/bin/make -f
 #ifndef configure.mk
 #include ../configure.mk
 #endif
@@ -44,7 +44,7 @@ INFO:
 ${ptt}:%:${rast}/%
 
 ${pttr}:${rast}/%:
-	f=`mktemp -d --tmpdir=/home/quinn/`; \
+	f=`mktemp -d --tmpdir=/tmp`; \
 	echo $f; \
 	curl '${url.${type}}&elem=$*' > $$f/$*.zip; \
 	cd $$f; \
@@ -71,7 +71,7 @@ ${rast}/srha:
 	jul_deg="(360*($$julian/365.0))";\
 	dr="(1.0+0.033*cos($$jul_deg))";\
 	declination="360.0/$$pi*0.409*sin($$jul_deg-79.64)";\
-	r.mapcalc "srha=acos(-tan(latitude_deg@4km)*tan($$declination))"; 
+	r.mapcalc "srha=acos(-tan(latitude_deg@4km)*tan($$declination))";
 
 .PHONY:Ra
 Ra:${rast}/Ra
@@ -91,16 +91,16 @@ $(rast)/Tm: $(rast)/tmin $(rast)/tmax
 .PHONY:ETh
 ETh:$(rast)/ETh
 $(rast)/ETh: $(rast)/Tm $(rast)/tmax $(rast)/tmin $(rast)/Ra
-	@r.mapcalc "ETh=if(tmax<tmin,0,0.408*(0.0023*Ra*(Tm+17.8))*(sqrt(tmax-tmin)))" 
+	@r.mapcalc "ETh=if(tmax<tmin,0,0.408*(0.0023*Ra*(Tm+17.8))*(sqrt(tmax-tmin)))"
 
 .PHONY:ETo
 ETo:$(rast)/ETo
-$(rast)/ETo:$(rast)/ETh 
+$(rast)/ETo:$(rast)/ETh
 	@r.mapcalc "ETo=ETh*cfhs@4km" 2>/dev/null;\
 
 .PHONY:rf
 rf:$(rast)/rf
-$(rast)/rf:$(rast)/ETo $(rast)/ppt 
+$(rast)/rf:$(rast)/ETo $(rast)/ppt
 	@r.mapcalc "rf=if(ppt>ETo,1,0)" 2>/dev/null;\
 
 endif

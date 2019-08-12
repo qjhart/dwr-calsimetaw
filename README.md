@@ -37,11 +37,18 @@ there is not a single Makefile that runs the entire process
 
 ### Download the prism data
 
-Since 2010 PRISM has supplied daily data for processing.  One issue with this data is that they maintain a 6 month period where the data is identified as _provisional_.  Sometimes, we don't like to wait, and so we use some of the provisional data is input for the CIMIS data.
+Since 2010 PRISM has supplied daily data for processing.  One issue
+with this data is that they maintain a 6 month period where the data
+is identified as _provisional_.  Sometimes, we don't like to wait, and
+so we use some of the provisional data is input for the CIMIS data.
 
-What data to try and download is determined by the location that you are currently using.  Schema _prism-stable_ retrieves stable data while _prism-provisional_ retrieves provisonal data.
+What data to try and download is determined by the location that you
+are currently using.  Schema _prism-stable_ retrieves stable data
+while _prism-provisional_ retrieves provisonal data.
 
-Either way the process is the same, we use the prism/daily.mk script to fetch that data.  You need to be executing in grass for  this to work.
+Either way the process is the same, we use the prism/daily.mk script
+to fetch that data.  You need to be executing in grass for this to
+work.
 
 ```{bash}
 for d in `seq 1 364`; do
@@ -54,9 +61,10 @@ done
 
 ### Reproject to CIMIS
 
-There currently is no makefile to do this.  We just do that by scripting, which
-is a bit dumb but there you are.  In the ca-daily-prism code, you use the
-following.  Note that the make script runs the calsimetaw method for ET.
+There currently is no makefile to do this.  We just do that by
+scripting, which is a bit dumb but there you are.  In the
+ca-daily-prism code, you use the following.  Note that the make script
+runs the calsimetaw method for ET.
 
 ```{bash}
 # Let's say we have the first 212 days in stable, but the rest are provisional

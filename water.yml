@@ -1,0 +1,31 @@
+# Create with alias water-dc='CURRENT_UID=$(id -u):$(id -g) docker-compose -p water -f ~/dwr-calsimetaw/water.yml'
+version: '3'
+
+###
+# Create a jena instance for building graphs for the DAMS
+###
+services:
+  grass:
+    build: ./docker/grass
+    env_file:
+      - water.yml.env
+    user: ${CURRENT_UID}
+    volumes:
+      - ./gdb:/data
+      - ./2003-present:/dwr-calsimetaw
+    command: tail -f /dev/null
+  db:
+    image: kartoza/postgis
+    restart: always
+    env_file:
+      - water.yml.env
+    volumes:
+      - db:/var/lib/postgresql/data
+      - ./csv:/csv
+      - ./docker/postgis/initdb.d/:/docker-entrypoint-initdb.d
+    ports:
+      - 5432:5432
+
+volumes:
+  db:
+    driver: local
