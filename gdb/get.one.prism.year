@@ -1,0 +1,15 @@
+#! /bin/bash
+#run with export GRASS_BATCH_JOB=~/bin/get.one.year; year=2010 grass /home/quinn/gdb/cimis/quinn
+
+#g.region rast=state@4km
+r.mask state@4km
+declare -a vars=('tmin' 'tmax' 'ppt' 'ETo' 'rf')
+printf -v head "%s," "${vars[@]}"
+head="date,x,y,${head%?}"    # Remove the final character of head
+
+echo $head
+for m in $(g.mapsets -l separator=newline | grep ^${year}.... ); do
+    printf -v dvars "%s@${m}," "${vars[@]}";
+    dvars=${dvars%?};
+    r.out.xyz --q separator=',' input=$dvars output=- | perl -p -e "s/^/$m,/";
+done

@@ -167,3 +167,199 @@ ETo calcuations.  I made another outputer, so I could run:
 set search_path=cimis,public;
 select * from et_out_wy(:'pwd'||'/cimis_et_wy2015',:year);
 #+END_SRC
+
+** Patching
+
+*** 2018-02-23
+
+Some of the data that we need do not exist in the the UC Davis site, in
+that case, we need to get the data from DWR.  The way that you can do that
+is by getting the data from DWR via the http interface First, you need to
+download the data, for example this is how we can 
+
+#+BEGIN_SRC bash
+date=2018/02/23
+for f in ETo K Rnl Rs Rso Tdew Tn Tx U2; do
+  http https://spatialcimis.water.ca.gov/cimis/${date}/${f}.asc.gz > ${f}.asc.gz
+done
+#+END_SRC
+
+And the from that we can update a 'patch' mapset with this data. 
+
+#+BEGIN_SRC bash
+# grass /data/patch/quinn
+date=20180223
+g.mapset -c $date
+for i in *.asc; do 
+  n=$(basename $i .asc); r.in.gdal -o input=$i output=$n; 
+done
+#+END_SRC
+
+And from then we can get a CSV file that we can use to patch the CIMIS data.
+
+#+BEGIN_SRC bash
+g.region rast=state@4km
+r.mask -o state@4km
+declare -a vars=('Tn' 'Tx' 'Tdew' 'U2' 'ETo' 'K' 'Rnl' 'Rs')
+patch=20180223
+
+for m in $patch; do
+    printf -v dvars "%s@${m}," "${vars[@]}";
+    dvars=${dvars%?};
+    r.out.xyz --q seperator=',' input=$dvars | perl -p -e "s/^/$m,/";
+done > 2018_patch.csv
+
+#+END_SRC
+
+Then we can add that to our cimis data so that we can use this in our postgres data.
+
+#+BEGIN_SRC bash
+cat 2018_patch.csv >> cimis_2018.csv
+#+END_SRC
+
+Now we want to rebuild this for the new data. We first need to get the
+prism data back into the system.  Then
+
+#+BEGIN_SRC sql
+\set year 2018
+set search_path=prism,public;
+delete from prism.year where year=:year;
+select * from prism.create_by_day(:year,'/csv/prism_'||:'year'||'.csv');
+select * from prism.add_to_year(:year);
+-- Export to csv files.
+select * from prism.out_year('/csv/prism_2018',:year);
+#+END_SRC
+
+Next, we can look at the CIMIS data. We do this second, because we need the
+ppt data from the prism dataset.
+
+#+BEGIN_SRC sql
+\set year 2018
+set search_path=cimis,public;
+delete from cimis.year where year=:year;
+select * from cimis.create_by_day(:year,'/csv/cimis_'||:'year'||'.csv');
+select * from cimis.add_to_year(:year);
+-- Export to csv files.
+select * from cimis.out_year('/csv/cimis_2018',:year);
+
+#+END_SRC
+
+
+*** 2019
+
+For 2019, there were many dates missing on UCD site; 20190426 20191202
+20191209 20191211 20191212 20191213 20191214 20191215 20191216 20191217
+20191218 20191219 20191220 20191221 20191222 20191223 20191224 20191225 20191226 20191227
+20191228 20191229 20191230 20191231
+
+ Some of the data that we need do not exist in the the UC Davis site, in
+that case, we need to get the data from DWR.  The way that you can do that
+is by getting the data from DWR via the http interface First, you need to
+download the data, for example this is how we can
+
+#+BEGIN_SRC bash
+dates='0426 1202 1209 1211 1212 1213 1214 1215 1216 1217 1218 1219 1220 1221 1222 1223 1224 1225 1226 1227 1228 1229 1230 1231'
+
+for i in $dates; do 
+  echo $i
+  d=$(sed -e 's|\(..\)\(..\)|\1/\2|' <<< $i)
+  [[ -d 2019${i} ]] || mkdir 2019$i;
+  for f in ETo K Rnl Rs Rso Tdew Tn Tx U2; do
+    http https://spatialcimis.water.ca.gov/cimis/2019/${d}/${f}.asc.gz > 2019${i}/${f}.asc.gz
+  done
+done
+
+#+END_SRC
+
+However, even DWR missing data from these days.  The days with no data
+whatsoever are: dates='0426 1224 1225 1226'.  For these, we'll copy data
+from 0425,1223,1223, and 1227 respectively.
+
+#+BEGIN_SRC bash
+for i in 0425; do 
+  echo $i
+  d=$(sed -e 's|\(..\)\(..\)|\1/\2|' <<< $i)
+  [[ -d 2019${i} ]] || mkdir 2019$i;
+  for f in ETo K Rnl Rs Rso Tdew Tn Tx U2; do
+    http https://spatialcimis.water.ca.gov/cimis/2019/${d}/${f}.asc.gz > 2019${i}/${f}.asc.gz
+  done
+done
+
+rsync -a 20190425/ 20190426/
+rsync -a 20191223/ 20191224/
+rsync -a 20191223/ 20191225/
+rsync -a 20191227/ 20191226/
+
+#+END_SRC
+
+And the from that we can update a 'patch' mapset with this data. 
+
+#+BEGIN_SRC bash
+# grass /data/patch/quinn
+dates='0426 1202 1209 1211 1212 1213 1214 1215 1216 1217 1218 '
+dates+='1219 1220 1221 1222 1223 1224 1225 1226 1227 1228 1229 1230 1231'
+
+for d in $dates; do
+ date=2019${d};
+ echo $date;
+ g.mapset -c $date
+ for i in ${date}/*.asc; do 
+   n=$(basename $i .asc); r.in.gdal -o input=$i output=$n; 
+ done
+done
+#+END_SRC
+
+And now, again we can make a patch CSV file for these data.
+
+#+BEGIN_SRC bash
+g.region rast=state@4km
+r.mask state@4km
+declare -a vars=('Tn' 'Tx' 'Tdew' 'U2' 'ETo' 'K' 'Rnl' 'Rs')
+
+dates='0426 1202 1209 1211 1212 1213 1214 1215 1216 1217 1218 '
+dates+='1219 1220 1221 1222 1223 1224 1225 1226 1227 1228 1229 1230 1231'
+
+rm 2019_patch.csv
+for d in $dates; do
+    m=2019$d;
+    echo $m
+    printf -v dvars "%s@${m}," "${vars[@]}";
+    dvars=${dvars%?};
+    r.out.xyz --q separator=',' input=$dvars | perl -p -e "s/^/$m,/" >> 2019_patch.csv
+done 
+
+#+END_SRC
+
+Then we can add that to our cimis data so that we can use this in our postgres data.
+
+#+BEGIN_SRC bash
+cat 2019_patch.csv >> ../csv/cimis_2019.csv
+#+END_SRC
+
+Now we want to rebuild this for the new data. We first need to get the
+prism data back into the system.  Then
+
+#+BEGIN_SRC sql
+\set year 2019
+set search_path=prism,public;
+delete from prism.year where year=:year;
+select * from prism.create_by_day(:year,'/csv/prism_'||:'year'||'.csv');
+select * from prism.add_to_year(:year);
+-- Export to csv files.
+select * from prism.out_year('/csv/prism_2019',:year);
+#+END_SRC
+
+Next, we can look at the CIMIS data. We do this second, because we need the
+ppt data from the prism dataset.
+
+#+BEGIN_SRC sql
+\set year 2019
+set search_path=cimis,public;
+delete from cimis.year where year=:year;
+select * from cimis.create_by_day(:year,'/csv/cimis_'||:'year'||'.csv');
+select * from cimis.add_to_year(:year);
+-- Export to csv files.
+select * from cimis.out_year('/csv/cimis_2019',:year);
+
+#+END_SRC
+
