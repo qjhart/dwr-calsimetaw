@@ -1,4 +1,4 @@
-# Create with alias water-dc='CURRENT_UID=$(id -u):$(id -g) docker-compose -p water -f ~/dwr-calsimetaw/water.yml'
+#! /usr/bin/env yml-docker-compose.sh
 version: '3'
 
 ###
@@ -6,23 +6,26 @@ version: '3'
 ###
 services:
   grass:
-    build: ./docker/grass
-    env_file:
-      - water.yml.env
+    image: local-dev/dwr-calsimetaw-grass
     user: ${CURRENT_UID}
+    environment:
+      - HOME=/data
     volumes:
       - ./gdb:/data
       - ./2003-present:/dwr-calsimetaw
     command: tail -f /dev/null
   db:
-    image: kartoza/postgis
+    image: local-dev/dwr-calsimetaw-db
     restart: always
-    env_file:
-      - water.yml.env
+    environment:
+      - POSTGRES_USER=eto
+      - POSTGRES_PASS=water
+      - POSTGRES_DB=eto
     volumes:
       - db:/var/lib/postgresql/data
       - ./csv:/csv
-      - ./docker/postgis/initdb.d/:/docker-entrypoint-initdb.d
+      - ./docker/db/initdb.d/:/foo
+#      - ./docker/db/initdb.d/:/docker-db-initdb.d
     ports:
       - 5432:5432
 

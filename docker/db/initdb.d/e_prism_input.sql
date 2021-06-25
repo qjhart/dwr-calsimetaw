@@ -76,12 +76,12 @@ select prism.create_by_day($1,$2);
 select prism.add_to_wy($1);
 $$ LANGUAGE SQL;
 
-create or replace function prism.add_year(year integer,fn text)
-returns bigint as $$
-drop table prism_by_day;
-select prism.create_by_day($1,$2);
-select prism.add_to_year($1);
-$$ LANGUAGE SQL;
+--create or replace function prism.add_year(year integer,fn text)
+--returns bigint as $$
+--drop table prism_by_day;
+--select prism.create_by_day($1,$2);
+--select prism.add_to_year($1);
+--$$ LANGUAGE SQL;
 
 create or replace function prism.out_by_dwrid
 (in_dwr_id varchar(8),in_water_year integer)

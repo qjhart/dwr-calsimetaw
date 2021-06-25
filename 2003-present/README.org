@@ -169,7 +169,7 @@ select * from et_out_wy(:'pwd'||'/cimis_et_wy2015',:year);
 #+END_SRC
 
 ** Patching
-
+   
 *** 2018-02-23
 
 Some of the data that we need do not exist in the the UC Davis site, in
@@ -244,6 +244,37 @@ select * from cimis.out_year('/csv/cimis_2018',:year);
 
 #+END_SRC
 
+In order to copy data from the new site, I used the following steps to create a new mask.
+
+#+BEGIN_SRC bash
+g.region rast=state@2km
+g.region res=4000
+r.mapcalc expression='state_4km=state@2km'
+r.mask state_4km@quinn
+#+END_SRC
+
+Then you can get data like this. In this case, I've only got data from after 2018-10-21.
+
+#+BEGIN_SRC bash
+declare -a vars=('Tn' 'Tx' 'Tdew' 'U2' 'ETo' 'K' 'Rnl' 'Rs')
+printf -v head "%s," "${vars[@]}"
+head="date,x,y,${head%?}" 
+echo $head > 2018-10+.csv
+for m in $(g.mapsets -l separator=newline | grep '^201810[23].$');do 
+ echo $m; 
+ printf -v dvars "%s@${m}," "${vars[@]}"; 
+ dvars=${dvars%?}; 
+ r.out.xyz --q separator=',' input=$dvars | perl -p -e "s/^/$m,/" >> 2018-10+.csv; 
+done
+# And now Nov, Dec
+for m in $(g.mapsets -l separator=newline | grep '^20181[12]..$');do 
+ echo $m; 
+ printf -v dvars "%s@${m}," "${vars[@]}"; 
+ dvars=${dvars%?}; 
+ r.out.xyz --q separator=',' input=$dvars | perl -p -e "s/^/$m,/" >> 2018-10+.csv; 
+done
+
+#+END_SRC
 
 *** 2019
 
