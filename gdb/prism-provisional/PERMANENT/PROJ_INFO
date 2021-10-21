@@ -1,0 +1,5 @@
+name: Latitude-Longitude
+proj: ll
+datum: nad83
+ellps: grs80
+no_defs: defined
