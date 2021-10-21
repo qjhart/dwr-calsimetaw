@@ -59,7 +59,7 @@ $$ LANGUAGE SQL VOLATILE;
 
 create or replace function cimis.add_year(year integer,fn text)
 returns bigint as $$
-drop table cimis_by_day;
+drop table if exists cimis_by_day;
 select cimis.create_by_day($1,$2);
 select cimis.add_to_year($1);
 $$ LANGUAGE SQL;

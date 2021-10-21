@@ -53,8 +53,8 @@ to fetch that data.  You need to be executing in grass for this to
 work.
 
 #+BEGIN_SRC bash
-alias water-dc='CURRENT_UID=$(id -u):$(id -g) docker-compose -p water -f ~/dwr-calsimetaw/water.yml'
-water-dc exec grass grass /data/prism-stable/quinn
+alias water-dc='CURRENT_UID=$(id -u):$(id -g) docker-compose -p water -f ~/dwr-calsimetaw/eto.yml'
+water-dc exec grass grass -c /data/prism-stable/quinn
 
 #+END_SRC
 
@@ -120,14 +120,13 @@ The CIMIS data is arranged in a much different methodology, but the way of
 extractin the data into postgres database, and from there into the CalSIMETAW
 data is very similar.
 
-state vs state_mask?
-
 
 #+BEGIN_SRC bash
 year=2020
-g.region rast=state@4km
+g.region rast=state@2km
+g.region res=4000
 g.mask -r
-r.mask state@4km
+r.mask state@2km
 declare -a vars=('Tn' 'Tx' 'Tdew' 'U2' 'ETo' 'K' 'Rnl' 'Rs')
 printf -v head "%s," "${vars[@]}"
 head="date,x,y,${head%?}"    # Remove the final character of head
@@ -135,19 +134,13 @@ head="date,x,y,${head%?}"    # Remove the final character of head
 #echo $head > cimis_${year}.csv;
 
 
-for m in $(g.mapsets -l separator=newline | grep '^$[year}....');do
-#  echo $m;
+for m in $(g.mapsets -l separator=newline | grep "^${year}....$" | head);do
+  echo $m
   printf -v dvars "%s@${m}," "${vars[@]}";
   dvars=${dvars%?};
-  r.out.xyz --q separator=',' input=$dvars | perl -p -e "s/^/$m,/"
-done >> cimis_${year}.csv;
+  r.out.xyz --q separator=',' input=$dvars | perl -p -e "s/^/$m,/" >> ~/cimis_${year}.csv;
+done
 
-
-for m in $(g.mapsets -l separator=newline | grep ^${year}.... ); do
-    printf -v dvars "%s@${m}," "${vars[@]}";
-    dvars=${dvars%?};
-    r.out.xyz --q separator=',' input=$dvars output=- | perl -p -e "s/^/$m,/";
-done > prism_${year}.csv
 #+END_SRC
 
 
@@ -215,7 +208,6 @@ for m in $(g.mapsets -l separator=newline | grep ^${year}.... ); do
     r.out.xyz --q separator=',' input=$dvars output=- | perl -p -e "s/^/$m,/";
 done > prism_${year}.csv
 #+END_SRC
-
 
 
 * Contact
