@@ -53,8 +53,9 @@ to fetch that data.  You need to be executing in grass for this to
 work.
 
 #+BEGIN_SRC bash
-alias water-dc='CURRENT_UID=$(id -u):$(id -g) docker-compose -p water -f ~/dwr-calsimetaw/eto.yml'
-water-dc exec grass grass -c /data/prism-stable/quinn
+  me=quinn
+  alias water-dc='CURRENT_UID=$(id -u):$(id -g) docker-compose -p water -f ~/dwr-calsimetaw/eto.yml'
+  water-dc exec grass grass -c /data/prism-stable/${me}
 
 #+END_SRC
 
@@ -67,8 +68,6 @@ for d in `seq 0 364`; do
 done
 #+END_SRC
 
-for d in `seq 0 364`; do m=`date --date="$start + $d days" +%Y%m%d`; g.mapset -c $m; make -n -f daily.mk tmin tmax ppt; done
-
 
 *** Reproject to CIMIS
 
@@ -77,13 +76,13 @@ scripting, which is a bit dumb but there you are.  In the
 ca-daily-prism code, you use the following.  Note that the make script
 runs the calsimetaw method for ET.
 
-```{bash}
+#+begin_src bash
 # Now move to the prism-daily location
-g.mapset location=ca-prism-daily mapset=quinn
+g.mapset location=ca-prism-daily mapset=${me}
 # Let's say we have the first 212 days in stable, but the rest are provisional
 d=365
 for d in `seq 0 $d`; do
- date=`date --date="2018-01-01 + $d days" +%Y%m%d`;
+ date=`date --date="${start} + $d days" +%Y%m%d`;
  g.mapset -c $date; g.region rast=state@4km;
  for r in tmin tmax ppt; do
    r.proj input=$r location=prism-stable;
@@ -99,7 +98,8 @@ for d in `seq $d 364`; do
  done;
  make -f /dwr-calsimetaw/2003-present/daily.mk
 done
-```
+#+end_src
+
 
 *** Create the required input files
 
@@ -110,7 +110,6 @@ done
 #+BEGIN_SRC bash
 psql service=eto -c "select prism.add_year(2020,'/csv/prism_2020.csv')"
 psql service=eto -c "select prism.out_year(2020,'/csv/prism_2020')"
-
 
 #+END_SRC
 
@@ -147,7 +146,7 @@ done
 
 ** Create TIF Files
 
-```{bash}
+#+begin_src bash
 for s in `seq 0 365`; do
  d=$(date --date="2014-10-01 + $s days" +%Y%m%d);
  iso=$(date --date="2014-10-01 + $s days" --iso);
@@ -156,7 +155,8 @@ for s in `seq 0 365`; do
  start=$(date --date="$d" +%s000); end=$(date --date="$d + 24hours" +%s000);
  r.out.gdal input=ee output=$iso.tif type=Float32;
 done
-```
+  #+end_src
+
 
 * Actual Runs
 
