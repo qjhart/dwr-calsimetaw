@@ -120,6 +120,7 @@ extractin the data into postgres database, and from there into the CalSIMETAW
 data is very similar.
 
 
+#+name create_cimis_csv
 #+BEGIN_SRC bash
 year=2020
 g.region rast=state@2km
@@ -160,6 +161,65 @@ done
 
 * Actual Runs
 
+** 2021-10-29
+
+   Update Prism for stable data.
+
+#+BEGIN_SRC bash
+    #./eto.yml exec grass grass /data/prism-stable/quinn
+    g.mapset mapset=quinn location=prism-stable
+    start=2020-12-01
+    for d in `seq 0 31`; do m=`date --date="$start + $d days" +%Y%m%d`; g.mapset -c $m; make -n -f daily.mk tmin tmax ppt; done
+    # Now move to the prism-daily location
+    g.mapset location=ca-prism-daily mapset=quinn
+
+    # Only stable
+    for p in prism-stable; do
+    start=`2020-11-01`
+    end=`2020-12-31`
+    let d=`date --date=$end +%j`-`date --date=$start +%j`
+
+    for d in `seq 0 $d`; do
+     date=`date --date="$start + $d days" +%Y%m%d`;
+     g.mapset -c $date; g.region rast=state@4km;
+     for r in tmin tmax ppt; do
+       r.proj input=$r location=$p;
+     done;
+     make -f /dwr-calsimetaw/daily.mk
+    done
+  done
+
+#+END_SRC
+
+And then a new PRISM csv file.
+
+#+BEGIN_SRC bash
+year=2020
+g.region rast=state@4km
+r.mask -r
+r.mask state@4km
+declare -a vars=('tmin' 'tmax' 'ppt' 'ETo' 'rf')
+printf -v head "%s," "${vars[@]}"
+head="date,x,y,${head%?}"    # Remove the final character of head
+
+echo $head
+for m in $(g.mapsets -l separator=newline | grep ^${year}.... ); do
+    printf -v dvars "%s@${m}," "${vars[@]}";
+    dvars=${dvars%?};
+    r.out.xyz --q separator=',' input=$dvars output=- | perl -p -e "s/^/$m,/";
+done > prism_${year}.csv
+#+END_SRC
+
+Then we need to create the prism data using postgres.
+
+#+BEGIN_SRC bash
+psql service=eto -c "select prism.add_year(2020,'/csv/prism_2020.csv')"
+psql service=eto -c "select prism.out_year(2020,'/csv/prism_2020')"
+
+#+END_SRC
+
+
+
 ** 2021-06-23
 
 #+BEGIN_SRC bash
@@ -191,6 +251,8 @@ for p in prism-stable prism-provisional; do
 done
 
 #+END_SRC
+
+And now create the CIMIS csv file
 
 #+BEGIN_SRC bash
 year=2020
