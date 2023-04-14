@@ -100,51 +100,6 @@ for d in `seq $d 364`; do
 done
 #+end_src
 
-
-*** Create the required input files
-
-** Create Postgres ready data
-
-** Output the CalSimetaw data
-
-#+BEGIN_SRC bash
-psql service=eto -c "select prism.add_year(2020,'/csv/prism_2020.csv')"
-psql service=eto -c "select prism.out_year(2020,'/csv/prism_2020')"
-
-#+END_SRC
-
-*** CIMIS Data
-
-The CIMIS data is arranged in a much different methodology, but the way of
-extractin the data into postgres database, and from there into the CalSIMETAW
-data is very similar.
-
-
-#+name create_cimis_csv
-#+BEGIN_SRC bash
-year=2020
-g.region rast=state@2km
-g.region res=4000
-g.mask -r
-r.mask state@2km
-declare -a vars=('Tn' 'Tx' 'Tdew' 'U2' 'ETo' 'K' 'Rnl' 'Rs')
-printf -v head "%s," "${vars[@]}"
-head="date,x,y,${head%?}"    # Remove the final character of head
-
-#echo $head > cimis_${year}.csv;
-
-
-for m in $(g.mapsets -l separator=newline | grep "^${year}....$" | head);do
-  echo $m
-  printf -v dvars "%s@${m}," "${vars[@]}";
-  dvars=${dvars%?};
-  r.out.xyz --q separator=',' input=$dvars | perl -p -e "s/^/$m,/" >> ~/cimis_${year}.csv;
-done
-
-#+END_SRC
-
-
-
 ** Create TIF Files
 
 #+begin_src bash
@@ -160,6 +115,171 @@ done
 
 
 * Actual Runs
+
+
+** 2023-04-14
+
+   Morrie wants new data for 2022.  I'll get as much PRISM data as possible, and
+   then add whatever is needed.
+
+   Remember, this is run in a docker environment.
+   #+begin_src bash
+     alias water-dc='CURRENT_UID=$(id -u):$(id -g) docker compose -p water -f ~/dwr-calsimetaw/eto.yml'
+     water-dc up -d
+   #+end_src
+
+#+BEGIN_SRC bash
+  # You are running in your container.
+  #water-dc exec grass grass /data/prism-stable/quinn
+  g.mapset mapset=quinn location=prism-stable
+  start='2022-04-01'
+  end='2022-12-31'
+  let d=`date --date=$end +%-j`-`date --date=$start +%-j`
+  for d in `seq 0 $d`; do
+      date=`date --date="$start + $d days" +%Y%m%d`;
+      g.mapset -c $date; make -f daily.mk tmin tmax ppt;
+  done
+  # From 2022/10/01 on provisional, and the above failed, so remove those dirs
+
+  rm -rf /data/prism-stable/20221???
+
+  # And re-run w/ provisional data
+  g.mapset mapset=quinn location=prism-provisional
+  start='2022-10-01'
+  end='2022-12-31'
+  let d=`date --date=$end +%-j`-`date --date=$start +%-j`
+  for d in `seq 0 $d`; do
+      date=`date --date="$start + $d days" +%Y%m%d`;
+      g.mapset -c $date; make -f /data/daily.mk tmin tmax ppt;
+  done
+
+
+  # Now move to the prism-daily location
+  g.mapset location=ca-prism-daily mapset=quinn
+
+  for p in prism-stable prism-provisional; do
+      start='2022-04-01'
+      end='2022-12-31'
+      let d=`date --date=$end +%-j`-`date --date=$start +%-j`
+
+      for d in `seq 0 $d`; do
+          date=`date --date="$start + $d days" +%Y%m%d`;
+          g.mapset -c $date; g.region rast=state@4km;
+          for r in tmin tmax ppt; do
+              r.proj --overwrite input=$r location=$p;
+          done;
+          make -f /dwr-calsimetaw/daily.mk
+      done
+  done
+   #+end_src
+
+
+   OK, now we have all the data available in grass, we need to convert to CSV
+   files.
+
+   #+BEGIN_SRC bash
+year=2022
+g.region rast=state@4km
+r.mask -r
+r.mask state@4km
+declare -a vars=('tmin' 'tmax' 'ppt' 'ETo' 'rf')
+printf -v head "%s," "${vars[@]}"
+head="date,x,y,${head%?}"    # Remove the final character of head
+
+echo $head
+for m in $(g.mapsets -l separator=newline | grep ^${year}.... ); do
+    printf -v dvars "%s@${m}," "${vars[@]}";
+    dvars=${dvars%?};
+    r.out.xyz --q separator=',' input=$dvars output=- | perl -p -e "s/^/$m,/";
+done > prism_${year}.csv
+#+END_SRC
+
+   And now with that in the csv directory, we can run this script
+
+  #+BEGIN_SRC bash
+     alias water-dc='CURRENT_UID=$(id -u):$(id -g) docker compose -p water -f ~/dwr-calsimetaw/eto.yml'
+     water-dc exec -u postgres db psql -c "select prism.add_year(2022,'/csv/prism_2022.csv');" eto
+     water-dc exec -u postgres db psql -c "select prism.out_year('/csv/prism_2022',2022);" eto
+#+END_SRC
+
+
+
+
+
+** 2023-01-26
+
+   It was noted that since I had removed the prism data before creating the
+   CIMIS data, I didn't actually have any precipitation data for the cimis
+   pixels, so I needed to rerun those, while the prism data was in the database.
+   Fortunately, I still had the csv data, so the following worked.
+
+   #+BEGIN_SRC bash
+     alias water-dc='CURRENT_UID=$(id -u):$(id -g) docker compose -p water -f ~/dwr-calsimetaw/eto.yml'
+     water-dc exec -u postgres db psql -c "select prism.add_year(2021,'/csv/prism_2021.csv');" eto
+     water-dc exec -u postgres db psql -c "select prism.add_year(2022,'/csv/prism_2022.csv');" eto
+     water-dc exec -u postgres db psql -c "select cimis.add_year(2021,'/csv/cimis_2021.csv');" eto
+     water-dc exec -u postgres db psql -c "select cimis.add_year(2022,'/csv/cimis_2022.csv');" eto
+     water-dc exec -u postgres db psql -c "select cimis.out_year('/csv/cimis_2021',2021);" eto
+     water-dc exec -u postgres db psql -c "select cimis.out_year('/csv/cimis_2022',2022);" eto
+#+END_SRC
+
+The zipfiles have been updated at: https://drive.google.com/drive/folders/0B1PbgjOWShULMm9ZbUlQb2N4RGc?resourcekey=0-OQH5ZIfIH-8NBui53oWa4g&usp=share_link
+
+
+** 2022-11-09
+
+
+*** CIMIS Data
+
+    This code is run on cimis-goes-s.cstars.ucdavis.edu, running under grass w/
+
+    #+begin_example
+    GRASS 7.4.0 (cimis):~ > g.gisenv
+ GOES_SOURCE=17
+ GISDBASE=/home/cimis/gdb
+ LOCATION_NAME=cimis
+ ET_URL=https://et.water.ca.gov/api
+ GUI=text
+ PID=21396
+ CG_ZIPCODE_DB=/home/quinn/cimis_zip.db
+ ET_APPKEY=4560e8dd-c61a-45d7-bd4f-2cd3e7afaeb7
+ MAPSET=quinn
+    #+end_example
+
+    #+begin_src bash
+      g.region rast=state@4km
+      r.mask -r
+      r.mask state@4km
+      declare -a vars=('Tn' 'Tx' 'day_dew_pnt_ns' 'U2' 'ETo' 'K' 'Rnl' 'Rs')
+      printf -v head "%s," "${vars[@]}"
+      head="date,x,y,${head%?}"    # Remove the final character of head
+
+      for year in 2021; do
+          for m in $(g.mapsets -l separator=newline | grep "^${year}....$" ); do
+              echo $m;
+              printf -v dvars "%s@${m}," "${vars[@]}";
+              dvars=${dvars%?};
+              r.out.xyz --q separator=',' input=$dvars | perl -p -e "s/^/$m,/" >> ~/cimis_${year}.csv;
+          done
+      done
+    #+end_src
+
+    Then, we copy those CSV files to where we are doing the processing.  And add
+    them into our setup with the following commands:
+
+    #+BEGIN_SRC bash
+      alias water-dc='CURRENT_UID=$(id -u):$(id -g) docker compose -p water -f ~/dwr-calsimetaw/eto.yml'
+      water-dc exec -u postgres db psql -c "select cimis.add_year(2021,'/csv/cimis_2021.csv');" eto
+      water-dc exec -u postgres db mkdir /csv/cimis_2021
+      water-dc exec -u postgres db psql -c "select cimis.out_year('/csv/cimis_2021',2021);" eto
+
+      water-dc exec -u postgres db psql -c "select cimis.add_year(2022,'/csv/cimis_2022.csv');" eto
+      water-dc exec -u postgres db mkdir /csv/cimis_2022
+      water-dc exec -u postgres db psql -c "select cimis.out_year('/csv/cimis_2022',2022);" eto
+
+ #+END_SRC
+
+
 
 ** 2021-10-29
 

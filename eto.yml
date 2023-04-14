@@ -24,6 +24,7 @@ services:
     volumes:
       - db:/var/lib/postgresql/data
       - ./csv:/csv
+      - ./gdb:/data
       - ./docker/db/initdb.d/:/foo
 #      - ./docker/db/initdb.d/:/docker-db-initdb.d
     ports:
