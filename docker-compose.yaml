@@ -1,0 +1,35 @@
+#! /usr/bin/env yml-docker-compose.sh
+version: '3'
+
+###
+# Create a jena instance for building graphs for the DAMS
+###
+services:
+  grass:
+    image: local-dev/dwr-calsimetaw-grass
+    user: ${CURRENT_UID}
+    environment:
+      - HOME=/data
+    volumes:
+      - ./gdb:/data
+      - ./2003-present:/dwr-calsimetaw
+    command: tail -f /dev/null
+  db:
+    image: local-dev/dwr-calsimetaw-db
+    restart: always
+    environment:
+      - POSTGRES_USER=eto
+      - POSTGRES_PASS=water
+      - POSTGRES_DB=eto
+    volumes:
+      - db:/var/lib/postgresql/data
+      - ./csv:/csv
+      - ./gdb:/data
+      - ./docker/db/initdb.d/:/foo
+#      - ./docker/db/initdb.d/:/docker-db-initdb.d
+    ports:
+      - 5432:5432
+
+volumes:
+  db:
+    driver: local

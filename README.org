@@ -34,7 +34,6 @@ daily prism data.
 The current setup uses a docker implementation.  The docker
 implementation, saves the PRISM data to the GDB file.
 
-
 ** Steps
 
 *** Download the prism data
@@ -115,6 +114,61 @@ done
 
 
 * Actual Runs
+
+
+** 2023-04-25 / 2023-05-16
+
+   Morrie wants the complete CIMIS data.  Currently we only gave DWR up until
+   sometime in October.
+
+   The first step is to get a CSV file of all the data for the year 2022.  We
+   need to run this on cimis-goes-s.cstars.ucdavis.edu, the production server.
+   The steps are presumably in [[*2022-11-09][2022-11-09]] . Looking at my home directory, there
+   it looks like I did this back in 2023-01-05.
+
+   Now, the PRISM data needs to be in the database, so that we can get the
+   precipitation from that data, I noticed this before at [[*2023-01-26][2023-01-26]].  I can see
+   from my data on this machine, that I must have forgotten to copy over the new
+   cimis_2022.csv file with all the data beyond, october.
+
+   When I ran this on 2023-04-25, I discovered that some data was missing: Well
+   shoot, I can see that we have 5 days missing from our data, 2022-08-01,
+   2022-08-15, 2022-09-02, 2022-10-04, 2022-12-13
+
+   George reported these fixed on 2023-05-16
+
+      Remember, this is run in a docker environment.
+   #+begin_src bash
+     alias water-dc='CURRENT_UID=$(id -u):$(id -g) docker compose -p water'
+     water-dc up -d
+   #+end_src
+
+
+
+   #+begin_src bash
+     rsync quinn@cimis-goes-s.cstars.ucdavis.edu:cimis_2022.csv.gz . -v
+   #+end_src
+
+   Ok, now I have all the cimis data.  I've copied the eto.yml file to the
+   docker-compose file, but we
+   Let's make sure the prism data is there:
+
+   #+BEGIN_SRC bash
+   docker compose -p water exec -u postgres db psql -c "select year,count(*) from prism.year group by year;" eto
+   #+END_SRC
+
+   #+RESULTS:
+   | year           |      |   | count |
+   | ------+------- |      |   |       |
+   | 2022           |      |   | 26295 |
+   | (1             | row) |   |       |
+   |                |      |   |       |
+
+
+   #+BEGIN_SRC bash
+    docker compose -p water exec -u postgres db psql -c "select cimis.add_year(2022,'/csv/cimis_2022.csv');" eto
+    docker compose -p water exec -u postgres db psql -c "select cimis.out_year('/csv/cimis_2022',2022);" eto
+   #+END_SRC
 
 
 ** 2023-04-14
@@ -203,9 +257,6 @@ done > prism_${year}.csv
 #+END_SRC
 
 
-
-
-
 ** 2023-01-26
 
    It was noted that since I had removed the prism data before creating the
@@ -254,7 +305,7 @@ The zipfiles have been updated at: https://drive.google.com/drive/folders/0B1Pbg
       printf -v head "%s," "${vars[@]}"
       head="date,x,y,${head%?}"    # Remove the final character of head
 
-      for year in 2021; do
+      for year in 2022; do
           for m in $(g.mapsets -l separator=newline | grep "^${year}....$" ); do
               echo $m;
               printf -v dvars "%s@${m}," "${vars[@]}";
